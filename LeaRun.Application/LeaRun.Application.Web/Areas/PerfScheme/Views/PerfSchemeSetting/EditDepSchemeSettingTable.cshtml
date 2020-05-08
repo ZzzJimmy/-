@@ -1,0 +1,169 @@
+﻿@{
+    ViewBag.Title = "编辑-科室绩效方案配置";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<style>
+    
+    .form td.formValue {
+        padding-left: 20px;
+    }
+
+    .ui-select-option-content {
+        max-height: !important 200px;
+    }
+</style>
+
+<script>
+    var keyValue = request('keyValue');
+    var Kpilist= '&nbsp:;';
+    var year = request('year');
+    $(function () {
+        initControl();
+        GetZBdata();
+    })
+    //初始化控件
+    function initControl() {
+        $("#JXND").ComboBox({
+            url: "../../PerfConfig/YearSetting/GetYearsJson",
+            param: { forSearch: false },//url参数
+            id: "ItemValue",//选项值
+            text: "ItemText",//选项文本
+            height: "200px",
+            description: "==请选择=="//默认
+        });
+         $("#FAMC").ComboBox({
+            url: "../../PerfScheme/PerfSchemeSetting/GetPerfSchemeNameJson",
+            param: { forSearch: false },//url参数
+            id: "ItemValue",//选项值
+            text: "ItemText",//选项文本
+            height: "200px",
+            description: "==请选择=="//默认
+         });
+         $("#OFFICENAME").ComboBox({
+            url: "../../PerfScheme/PerfSchemeSetting/GetDeptListJson",
+            param: { forSearch: false },//url参数
+            id: "ItemValue",//选项值
+            text: "ItemText",//选项文本
+            height: "200px",
+            description: "==请选择=="//默认
+         });
+
+        //获取表单
+        if (!!keyValue) {
+            $.SetForm({
+                url: "../../PerfScheme/PerfSchemeSetting/GetDepPerfSchemeData",
+                param: { keyValue: keyValue, year: year },
+                success: function (data) {
+                    $("#form1").SetWebControls(data);
+                    $('#STATUS' + data.IsEnabled).trigger('click');
+                    if (data.FABH) $("#FABH").attr("readOnly", true);
+                    $("#JXND").ComboBoxSetValue(data.JXBM);
+                    $("#OFFICENAME").ComboBoxSetValue(data.JGBM);
+                    $("#FAMC").ComboBoxSetValue(data.FABH);
+
+                }
+            });
+        }
+    }
+
+    //加载树
+    function GetZBdata() {
+        //加载基础方案所有指标数据
+        $.SetForm({
+            url: "../../PerfScheme/PerfSchemeSetting/GetAppraisedataBmList",
+            param: {},
+            success: function (data) {
+                KpiList = '&nbsp:;';
+                $.each(data, function (id, item) {
+                    KpiList += item.FABH + ':' + item.FAMC + ';'
+                });
+                KpiList = KpiList.substring(0, KpiList.length - 1);
+            }
+        });
+    }
+     //保存表单
+    function AcceptClick() {
+        if (!$('#form1').Validform()) {
+            return false;
+        }
+        var postData = $("#form1").GetWebControls(keyValue);
+        postData.STATUS = 1;//$('input[name="STATUS"]:checked').val();
+        postData.JXBM = postData.JXND;
+        postData.JGBM = postData.OFFICENAME;
+        //postData.JGFABH = postData.JGFABH;
+        //postData.JGFAMC = postData.JGFAMC;
+        postData.JXND = $("#JXND").text();
+        postData.FAMC = $("#FAMC").text();
+        postData.OFFICENAME = $("#OFFICENAME").text();
+        
+        if (!postData.JGFABH) {
+            dialogMsg('请输入对象方案编号', 0);
+        }
+
+        else {
+        
+            $.SaveForm({
+                url: "../../PerfScheme/PerfSchemeSetting/SaveSchemeDep",
+                param: postData,
+                loading: "正在保存数据...",
+                success: function () {
+                    $.currentIframe().$("#gridTable").trigger("reloadGrid");
+                }
+            });
+
+        }
+        
+    }
+
+</script>
+
+<div style="margin-top: 20px; margin-right: 20px;">
+    <table class="form">
+        <tr style="display:none">
+            <th class="formTitle">创建人</th>
+            <td class="formValue">
+                <input id="CREATOR" type="text" class="form-control" isvalid="yes" checkexpession="" />
+            </td>
+        </tr>
+        <tr style="display:none">
+            <th class="formTitle">绩效方案编码</th>
+            <td class="formValue">
+                <input id="FABH" type="text" class="form-control" isvalid="yes" checkexpession="" />
+            </td>
+        </tr>
+        <tr style="display">
+            <th class="formTitle">对象方案编号</th>
+            <td class="formValue">
+                <input id="JGFABH" type="text" class="form-control" placeholder="请输入方案编号" isvalid="yes" checkexpession="" />
+            </td>
+        </tr>
+        <tr>
+            <th class="formTitle">对象方案名称<font face="宋体">*</font></th>
+            <td class="formValue">
+                <input id="JGFAMC" type="text" class="form-control" placeholder="请输入对象方案名称" isvalid="yes" checkexpession="" />
+            </td>
+        </tr>
+        <tr>
+            <th class="formTitle">绑定对象<font face="宋体">*</font></th>
+            <td class="formValue">
+                <div id="OFFICENAME" type="select" class="ui-select" isvalid="yes" checkexpession="NotNull"></div>
+            </td>
+        </tr>
+        <tr>
+            <th class="formTitle">适用年度<font face="宋体">*</font></th>
+            <td class="formValue">
+                <div id="JXND" type="select" class="ui-select" isvalid="yes" checkexpession="NotNull"></div>
+            </td>
+        </tr>
+        <tr>
+            <th class="formTitle">绑定基础方案<font face="宋体">*</font></th>
+            <td class="formValue">
+                <div id="FAMC" type="select" class="ui-select" isvalid="yes" checkexpession="NotNull"></div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+
+
